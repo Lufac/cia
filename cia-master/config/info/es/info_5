@@ -1,0 +1,18 @@
+El proceso de  instalación de los nodos de cómputo se realiza por medio de 
+la red (PXE ) y usando el software - kickstart -, para ver el progreso de 
+instalación se proveen 2  mecanismos uno local y otro remoto.
+
+LOCAL
+^^^^^ 
+Verbose: Modo texto para depuración
+Texto: Modo text con dialgos 
+Gráfico: Modo gŕafico
+
+REMOTO
+^^^^^^
+VNC manual: Una vez comenzado el proceso de instalación, es posible ver el
+progreso de la instalación con el comando vncviewver <nombre_nodo>:1
+
+VNC automático: Se mostrará en la sesión gráfica actual (escritorio) una
+ventana con el proceso de la instalación en el nodo
+

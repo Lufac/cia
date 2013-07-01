@@ -1,0 +1,11 @@
+Cluster Installation & Administration es un conjunto de scripts que permiten
+instalar, configurar y posteriormente administrar un cluster utilizando
+la distribución Linux CentOS . 
+
+A continuación el instalador preguntara por la imagen DVD iso de la 
+versión de CentOS a instalar, la interfaz de red a utilizar para la instalación
+y posterior administración del cluster.
+
+La configuración puede ser cancelada en cualquier momento precionando CTRL+C. 
+
+Presione una tecla para continuar. 

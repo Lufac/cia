@@ -1,0 +1,11 @@
+CIA utiliza directamente las imagenes DVD ISO para la instalción del sistema
+operativo en los nodos de cómputo, permite tambien la instalación de 
+diferentes arquitecturas 32 bits (i386) y  64 bits (x86_64). 
+
+A continuación escriba la ruta absoluta a la imagen DVD ISO para la 
+arquitectura de los nodos de cómputo. 
+* Ejemplo: /isos/centos/5.5/CentOS-5.5-x86_64-bin-DVD.iso 
+
+Si no cuenta o no instalará alguna de las 2 arquitecturas puede dejar en blanco
+el valor presionando enter. 
+

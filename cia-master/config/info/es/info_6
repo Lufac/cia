@@ -1,0 +1,8 @@
+El siguiente paso para la instalación del cluster es definir la cantidad de 
+nodos de cómputo que lo conformarán así como su arquitectura 32 o 64 bits.
+
+Para comenzar el proceso de configuración de los nodos de cómputo, ejecutar
+el comando: 
+
+cluster_install create 
+

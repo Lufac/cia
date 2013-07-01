@@ -1,0 +1,16 @@
+Para realizar la instalación y administración de los nodos de cómputo se  
+requiere de una interface de red no virtual (ej. eth0:1) configurada y con
+un nombre de hosts valido.
+
+A partir de la dirección IP configurada en esta interface se asignarán las
+direcciones IP de los nodos de cómputo. 
+
+Por ejemplo, si la dirección IP del nodo maestro es: 192.168.100.50
+las direcciones IP de los nodos serán: 
+
+192.168.100.1
+192.168.100.2
+192.168.100.3
+...
+192.168.100.49
+

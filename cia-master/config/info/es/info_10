@@ -1,0 +1,28 @@
+La configuración de los nodos de cómputo se lleva a cabo en el archivos
+MAC.conf, hosts.install y group.install.
+
+En estos archivos se definen la dirección MAC de cada uno de nodos, su nombre 
+así com al grupo al que pertenecen. 
+
+CIA obtiene la dirección MAC de forma automática de la interface de red 
+definida en el paso anterio o de forma manual si es que el usuario tiene un 
+listado de ellas. 
+
+El nombre de los nodos se obtiene a travez de un sufijo y agregandole el número
+de nodo correspondiente, por ejemplo si el sufijo es node0 los nodos de 
+cómputo tendrán los siguientes nombres:
+
+node01
+node02
+node03
+...
+...
+
+Para la configuración de grupos dentro de CIA es necesario definir:
+
+1. EL nombre del grupo
+2. La arquitectura de los nodos de cómputo en el grupo (i386, x86_64)
+3. Cantidad de nodos de cómputo que lo forman
+4. Sufijo que sera usado para nombrar a los nodos de cómputo en el grupo.
+
+
