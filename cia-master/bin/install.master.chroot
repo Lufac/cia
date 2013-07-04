@@ -1,4 +1,29 @@
 #!/bin/bash
+#===================================================================================
+#
+# FILE: install.master.chroot
+#
+# USAGE: ./install.master.chroot
+#
+# DESCRIPTION: Este script instala un nodo maestro desde otra maquina
+#
+# OPTIONS:
+#   -h  
+#     Presenta ayuda
+#   -iso PATH_ISO
+#     Ruta del ISO de la distribucion que se va a instalar
+# REQUIREMENTS: 
+# BUGS:
+#   1- Validar que en cada funcion todas las variables
+#   2- Validar que los archivos donde se escriba existan
+#   3- Por algo el ciclo de cachar la MAC del DHCP no regresa cero
+# NOTES:
+# AUTHOR: Lic. Pedro Cruz
+# COMPANY: Lufac Computacion
+# VERSION: 1.0
+# CREATED: 2.06.2013
+# REVISION: 4.06.2013
+#===================================================================================
 
 CIA_ROOT=$(dirname $PWD)
 CONFIG_FILE="$CIA_ROOT/config/cia.conf"
