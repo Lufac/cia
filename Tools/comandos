@@ -14,9 +14,17 @@ b) Creación de un repositorio:
 
     Crea un repositorio en el directorio actual
 
-3. git clone url
+3. git clone https://github.com/Lufac/cia.git
 
     Clona un repositorio remoto dentro de un directorio
+
+3(a). cambiar o agregar las siguentes lienas en el archivo 
+        .git/config sobre el raiz del proyecto
+
+url = https://username@github.com/Lufac/cia.git
+[user]
+  name = username
+  email = email of username 
 
 c) Operaciones sobre Archivos:
 
