@@ -1,0 +1,53 @@
+#!/bin/bash 
+
+returnAdminMac(){
+
+IP_IPMI=$1
+ipmitool -U ADMIN -P ADMIN -H $IP_IPMI  raw 0x30 0x21 | tr " " : | cut -d : -f6-11
+}
+
+setIpmiStatic(){
+IP_IPMI=$1
+ipmitool -U ADMIN -P ADMIN -H $IP_IPMI  lan set 1 ipsrc static
+}
+
+setIpmiDhcp(){
+IP_IPMI=$1
+ipmitool -U ADMIN -P ADMIN -H $IP_IPMI  lan set 1 ipsrc dhcp
+}
+
+
+setIpmiDedicated(){
+IP_IPMI=$1
+ipmitool -U ADMIN -P ADMIN -H $IP_IPMI  raw 0x30 0x70 0x0c 1 0
+}
+
+setIpmiOnboard(){
+IP_IPMI=$1
+ipmitool -U ADMIN -P ADMIN -H $IP_IPMI  raw 0x30 0x70 0x0c 1 1
+}
+
+setIpmiFailover(){
+IP_IPMI=$1
+ipmitool -U ADMIN -P ADMIN -H $IP_IPMI  raw 0x30 0x70 0x0c 1 2
+}
+
+setIpmiBootPxe(){
+IP_IPMI=$1
+ipmitool -U ADMIN -P ADMIN -H $IP_IPMI chassis bootdev pxe
+
+}
+
+setIpmiBootBios(){
+IP_IPMI=$1
+ipmitool -U ADMIN -P ADMIN -H $IP_IPMI chassis bootdev bios
+
+}
+
+setIpmiPowerOn(){
+IP_IPMI=$1
+ipmitool -U ADMIN -P ADMIN -H $IP_IPMI chassis power on
+
+}
+
+

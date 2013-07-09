@@ -1,0 +1,42 @@
+#!/bin/bash 
+
+NODE_NAME=$1
+NODE_IP=$2 
+IP_IPMI=$3
+
+[ $# -lt 1 ] && exit  
+
+
+[ -e cia_functions ] && . cia_functions 
+
+INSTALL_DEVICE=eth0
+DHCP_FILE=/tmp/dhcpd.conf.cia
+
+SUBNET_IPMI=172.16.0.0
+NETMASK_IPMI=255.255.0.0
+ROUTER_IPMI=172.16.253.253
+DNS_IPMI=8.8.8.8
+
+SUBNET_ADMIN=172.17.0.0     
+NETMASK_ADMIN=255.255.0.0   
+ROUTER_ADMIN=172.17.253.253
+DNS_ADMIN=8.8.8.8           
+
+
+writeHeadDhcpConf > $DHCP_FILE 
+writeSubnetIpmiConf  $SUBNET_IPMI $NETMASK_IPMI $ROUTER_IPMI $DNS_IPMI >> $DHCP_FILE
+writeTailIpmiConf >> $DHCP_FILE
+writeSubnetAdminConf  $SUBNET_ADMIN $NETMASK_ADMIN $ROUTER_ADMIN $DNS_ADMIN >> $DHCP_FILE
+
+MAC_ADMIN=$(returnAdminMac $IP_IPMI )
+
+writeNodeAdminConf $NODE_NAME $MAC_ADMIN $NODE_IP >> $DHCP_FILE
+
+writeTailAdminConf >> $DHCP_FILE
+writeTailDhcpConf >> $DHCP_FILE 
+
+#setIpmiPowerOn $IP_IPMI
+cat $DHCP_FILE 
+#startDhcpService $INSTALL_DEVICE  2>/dev/null
+
+

@@ -1,0 +1,632 @@
+#!/bin/bash
+
+
+NODE_IP=172.17.1.123
+NODE_NAME=master
+REPO_DIR=/opt/isos/centos/6.4/x86_64
+INSTALL_DEVICE=eth0
+
+returnValidIP $NODE_IP  
+[ $? -ne 0 ] && exit 
+
+#establecer directorio o archivo ISO repo
+bash  config.node.repo $NODE_IP $REPO_DIR 
+
+#configurar ip estatica ipmi
+bash config.node.ipmi  $NODE_NAME $NODE_IP $INSTALL_DEVICE PXE 
+
+#establecer arranque PXE
+#obtener MAC desde ipmi
+
+#establecer directorio o archivo ISO repo
+#establecer archivo kickstart
+#configurar http
+#configurar dhcp
+#configurar  tftp
+
+
+
+
+
+
+
+
+CIA_ROOT=$(dirname $PWD)
+CONFIG_FILE="$CIA_ROOT/config/cia.conf"
+CIA_LOG="$CIA_ROOT/log/install.log"
+MAC_FILE="$CIA_ROOT/config/MAC.conf"
+HOSTS_INSTALL="$CIA_ROOT/config/hosts.install"
+GROUPS_INSTALL="$CIA_ROOT/config/groups.install"
+CIA_FUNCTIONS="$CIA_ROOT/bin/functions"
+CIA_VERSION=6.2
+GUI_CONF=vnc
+CI_ROOT=$CIA_ROOT/cluster_install
+CA_ROOT=$CIA_ROOT/cluster_admin
+CIA_FUNCTIONS=$CIA_ROOT/bin/functions
+
+TEXTS=$CIA_ROOT/config/info/es
+ALIAS_IP=172.16.0.0
+ALIAS_NETMASK=255.255.0.0
+RANG_ALIAS="172.16.1.1 172.16.253.250"
+
+
+export CIA_ROOT CONFIG_FILE CIA_LOG MAC_FILE HOSTS_INSTALL GROUPS_INSTALL CIA_FUNCTIONS TEXTS DHCP_CONF CI_ROOT CA_ROOT
+
+
+################################################################################
+
+################################################################################
+make_config(){
+
+MASTER_ARCH=$1
+
+if [ "$MASTER_ARCH" == "i386" ] ; then
+
+	ISO_i386=$3 
+
+if [ ! -f "$ISO_i386" ] && [ ! -d $3 ] ;then
+        echo "El archivo  $ISO_i386 
+no existe"
+ISO_i386=""
+fi
+
+elif [ "$MASTER_ARCH" == "x86_64" ] ; then
+ 
+	ISO_x86_64=$3
+
+if [ ! -f "$ISO_x86_64" ] && [ ! -d $3 ] ;then
+        echo "El archivo $ISO_x86_64 
+no existe"
+ISO_x86_64=""
+fi
+
+else
+	echo "Arquitectura incorrecta $MASTER_ARCH
+arquitecturas soportadas i386, x86_64"
+exit
+fi 
+
+if [ -d "$3" ] ; then 
+	echo "Utilizando directorio local -> $3 <- como fuente de instalación"
+
+LOCAL_DIR="$3"
+
+elif [ "http://"  == "$(echo $3 | cut -c1-7)" ] ; then 
+	echo  "Utilizando directorio remoto -> $3 <- como fuente de instalación"
+HTTP_DIR=$3
+else
+	if [ -z $ISO_i386 ] &&  [ -z $ISO_x86_64  ] ; then
+	echo "Se necesita una imagen DVD ISO para continuar ..."
+	exit
+	fi
+fi
+
+iface=$2
+[ "$iface" == lo ] && echo "la interface $iface no es valida " && exit
+
+ifconfig $iface &>/dev/null 
+
+[ $? -eq 1 ] && echo "la interface $iface no existe" && exit 
+
+VAR=($(ifconfig $iface | grep -w inet ))
+
+INSTALL_DEVICE=$iface
+LOCAL_IP=$(echo ${VAR[1]##*[:]})
+LOCAL_HOSTNAME=$(hostname)
+MASTER_NETMASK=$(echo ${VAR[3]##*[:]})
+MASTER_BROADCAST=$(echo ${VAR[2]##*[:]})
+
+MASTER_HOSTNAME=$5
+
+[ -z $LOCAL_IP ] && echo "la  interface $iface de instalacion no esta configurada" && exit
+[ "$LOCAL_HOSTNAME" == "localhost" ] && echo "el nombre de host - $MASTER_HOSTNAME - no es valido para la instalacion" && exit
+[ "$MASTER_HOSTNAME" == "localhost" ] && echo "el nombre de host - $MASTER_HOSTNAME - no es valido para el nodo maestro" && exit
+
+#############VALOR DEFUALT########################
+MASTER_IP=$4
+
+IP_1=$(echo $MASTER_IP | awk -F. '{print $1}')
+IP_2=$(echo $MASTER_IP | awk -F. '{print $2}')
+IP_3=$(echo $MASTER_IP | awk -F. '{print $3}')
+IP_4=$(echo $MASTER_IP | awk -F. '{print $4}')
+
+NETMASK_1=$(echo $MASTER_NETMASK | awk -F. '{print $1}')
+NETMASK_2=$(echo $MASTER_NETMASK | awk -F. '{print $2}')
+NETMASK_3=$(echo $MASTER_NETMASK | awk -F. '{print $3}')
+NETMASK_4=$(echo $MASTER_NETMASK | awk -F. '{print $4}')
+
+NETWORK_1=$IP_1
+
+[ $NETMASK_2 -ne 0 ] && NETWORK_2=$IP_2 || NETWORK_2=0
+[ $NETMASK_3 -ne 0 ] && NETWORK_3=$IP_3 || NETWORK_3=0
+[ $NETMASK_4 -ne 0 ] && NETWORK_4=$IP_4 || NETWORK_4=0
+
+MASTER_NETWORK="$NETWORK_1.$NETWORK_2.$NETWORK_3.$NETWORK_4"
+
+INSTALL_METHOD=$6
+
+echo "MASTER_HOSTNAME=$MASTER_HOSTNAME" 
+echo "MASTER_ARCH=$MASTER_ARCH"
+echo "INSTALL_DEVICE=$INSTALL_DEVICE "
+echo "INSTALL_METHOD=$INSTALL_METHOD"
+echo "MASTER_IP=$MASTER_IP"
+echo "MASTER_NETMASK=$MASTER_NETMASK"
+echo "MASTER_BROADCAST=$MASTER_BROADCAST"
+echo "MASTER_NETWORK=$MASTER_NETWORK"
+[ ! -z $ISO_i386 ] && echo "ISO_i386=$ISO_i386"
+[ ! -z $ISO_x86_64 ] && echo "ISO_x86_64=$ISO_x86_64"
+[ ! -z $LOCAL_DIR ] && echo "LOCAL_DIR=$LOCAL_DIR"
+[ ! -z $HTTP_DIR ] && echo "HTTP_DIR=$HTTP_DIR"
+
+
+echo -n "Estos valores son correctos? [S/n]"
+read -n 1 resp
+echo 
+
+[ "$resp" == n ] || [ "$resp" == N ] && exit
+
+###########################################
+
+#GUI_CONF=vnc
+#VNC_EXTRA="vncconnect=$LOCAL_IP"
+#killall vncviewer &>/dev/null  
+#vncviewer -listen &>/dev/null &
+
+###########################################
+ 
+
+echo "####################################
+#CIA CONFIG FILE 
+#$(date)
+####################################
+MASTER_HOSTNAME=$MASTER_HOSTNAME
+MASTER_ARCH=$MASTER_ARCH
+INSTALL_DEVICE=$INSTALL_DEVICE 
+INSTALL_METHOD=$INSTALL_METHOD
+MASTER_IP=$MASTER_IP
+MASTER_NETMASK=$MASTER_NETMASK
+BROADCAST=$MASTER_BROADCAST
+MASTER_NETWORK=$MASTER_NETWORK
+ISO_i386=$ISO_i386
+ISO_x86_64=$ISO_x86_64
+LOCAL_DIR=$LOCAL_DIR
+HTTP_DIR=$HTTP_DIR
+GUI=$GUI_CONF
+VNC_EXTRA=$VNC_EXTRA
+TFTP_TIMEOUT=120 
+">$CONFIG_FILE 
+
+}
+
+################################################################################
+################################################################################
+silent_config(){
+if [ $# -lt 6 ]  ;then 
+echo "Uso $0  <INSTALL_DEVICE> <ISO|DIR> <MASTER_IP> <MASTER_HOSTNAME>  [default|custom]" 
+echo "ej: $0 x86_64   eth0 /opt/isos/linux/centos/6.2/CentOS-6.2-x86_64-bin-DVD-1of2.iso 172.17.253.253 master default "
+echo "ej: $0 x86_64  eth0 /opt/isos/linux/centos/6.2/x86_64/os 172.17.253.253 master default " 
+
+exit
+fi 
+
+MASTER_ARCH=$1
+INSTALL_DEVICE=$2
+ISO=$3
+IP_ADDR=$4
+MASTER_HOSTNAME=$5
+INSTALL_METHOD=$6
+MAC_NODE=$7
+POST_SCHEME=$7
+
+make_config $MASTER_ARCH $INSTALL_DEVICE $ISO $IP_ADDR $MASTER_HOSTNAME  $INSTALL_METHOD
+
+}
+
+
+################################################################################
+
+################################################################################
+
+
+[ "$(whoami)" != "root" ] && echo "Only root want to do this." && exit 255 
+
+
+if [ -e /usr/kerberos/bin/rsh ] ; then
+        pack=$(rpm -qf /usr/kerberos/bin/rsh)
+        echo "kerberos rsh found!!! $pack, Uninstalling... "
+	sleep 3
+        rpm -e $pack
+
+fi
+
+[ -e /tmp/bad.mac ] && rm -f /tmp/bad.mac
+
+silent_config $@
+. $CONFIG_FILE
+export MASTER_HOSTNAME MASTER_ARCH MASTER_IP INSTALL_DEVICE INSTALL_METHOD  MASTER_NETMASK MASTER_BROADCAST MASTER_NETWORK ISO_i386 ISO_x86_64 LOCAL_DIR HTTP_DIR
+
+rm -rf /tftpboot $CIA_ROOT/cluster_install/tftpboot/
+mkdir -p $CIA_ROOT/cluster_install/tftpboot/pxelinux/pxelinux.cfg/
+mkdir -p $CIA_ROOT/cluster_install/tftpboot/boot
+ln -sf $CIA_ROOT/cluster_install/tftpboot /tftpboot
+[ -e /usr/share/syslinux/pxelinux.0 ]  && cp /usr/share/syslinux/pxelinux.0 /tftpboot/pxelinux/pxelinux.bin
+
+if [ ! -f /etc/xinetd.d/tftp ] ;then
+        echo ERROR "tftp-server not found.  Try yum -y install tftp-server"
+        echo ERROR "Aborting ..... ctr+c"
+        sleep 2000
+        exit 255
+
+fi
+
+if [ ! -f /etc/init.d/dhcpd ] ;then
+        echo ERROR "dhcp-server not found. Try yum -y install dhcp"
+        echo ERROR "Aborting ..... ctr+c"
+        sleep 2000
+        exit 255
+else
+[ -e /etc/dhcp/dhcpd.conf ] && DHCP_CONF=/etc/dhcp/dhcpd.conf || DHCP_CONF=/etc/dhcpd.conf
+
+echo "set DHCP_CONF  to $DHCP_CONF"
+
+fi
+
+if [ ! -f /etc/init.d/httpd ] ;then
+        echo ERROR "http-server not found."
+        echo ERROR "Aborting ..... ctr+c"
+        sleep 2000
+        exit 255
+
+fi
+
+if [ ! -f /etc/init.d/nfs ] ;then
+        echo ERROR "nfs-server not found. Try yum -y  install nfs-utils"
+        echo ERROR "Aborting ..... ctr+c"
+        sleep 2000
+        exit 255
+
+fi
+
+
+sed 's/server_args.*=.*/server_args\t\t= -v -v -v -s \/tftpboot/g' /etc/xinetd.d/tftp > /etc/xinetd.d/eservice
+
+cat /etc/xinetd.d/eservice > /etc/xinetd.d/tftp
+rm -f /etc/xinetd.d/eservice
+
+chkconfig tftp on
+
+sed 's/127\.0\.0\.1.*localhost/127.0.0.1 localhost.localdomain localhost/g' /etc/hosts > /etc/hosts.modif
+cp /etc/hosts.modif /etc/hosts
+
+if  grep -q $LOCAL_IP /etc/hosts ;then
+    sed "s/$LOCAL_IP.*/$LOCAL_IP\t $LOCAL_HOSTNAME/" /etc/hosts >  /etc/hosts.modif
+    cp /etc/hosts.modif /etc/hosts
+else
+        echo -e "$LOCAL_IP\t $LOCAL_HOSTNAME" >> /etc/hosts
+fi
+
+
+cat>/etc/httpd/conf.d/cia_httpd.conf <<END
+
+Alias /kickstart $CIA_ROOT/cluster_install/kickstart
+<Location /kickstart>
+    Options Indexes
+    Order deny,allow
+    Deny from all
+    Allow from 127.0.0.1
+    Allow from $MASTER_NETWORK/$MASTER_NETMASK
+</Location>
+
+END
+
+if [ ! -z "$LOCAL_DIR" ] ;then 
+cat>>/etc/httpd/conf.d/cia_httpd.conf <<END
+
+Alias /cia-install $LOCAL_DIR
+<Location /cia-install>
+    Options Indexes
+    Order deny,allow
+    Deny from all
+    Allow from 127.0.0.1
+    Allow from $MASTER_NETWORK/$MASTER_NETMASK
+</Location>
+
+END
+fi
+
+if [ "$INSTALL_METHOD" !=  "custom" ] && [ "$INSTALL_METHOD" != "default" ] && [ ! -z $4 ] ;then  
+while : ; do
+echo -n "
+######################################################################
+Seleccione el tipo de instalacion para el nodo maestro:
+
+1. default: auto-partition, solo configuracion para la interfase eth0   
+2. custom: particion y configuracion de red personalizadas
+######################################################################
+1/2 [1]: "
+read -n 1 resp
+[ -z $resp ] || [ $resp == 1 ] && resp=1  && break
+[ $resp == 2 ] || [ $resp == 2 ] && break
+
+done
+
+else   
+        [ -z $INSTALL_METHOD ] && resp=1
+	[ "$INSTALL_METHOD" == "default" ] && resp=1
+	[ "$INSTALL_METHOD" == "custom" ] && resp=2
+fi 
+
+if [ $resp == 1 ] ; then 
+echo "
+Instalacion por default"
+export KS_SCHEME=default
+echo "network --device eth0 --onboot yes --bootproto static --ip $MASTER_IP --netmask $MASTER_NETMASK --nameserver $MASTER_IP  --hostname $MASTER_HOSTNAME" > $CIA_ROOT/cluster_install/kickstart/master/default-network.ks 
+
+##############################################
+echo install > $CIA_ROOT/cluster_install/kickstart/master/default-method.ks 
+else 
+export KS_SCHEME=custom
+echo "
+Instalacion personalizada"
+echo "network --device eth0 --onboot yes --bootproto static --ip $MASTER_IP --netmask $MASTER_NETMASK --nameserver $MASTER_IP  --hostname $MASTER_HOSTNAME" > $CIA_ROOT/cluster_install/kickstart/master/custom-network.ks 
+echo install > $CIA_ROOT/cluster_install/kickstart/master/custom-method.ks
+fi
+
+echo "%packages --ignoremissing" > $CIA_ROOT/cluster_install/kickstart/master/default-packages.ks
+cat $CIA_ROOT/cluster_install/kickstart/master/groups >>$CIA_ROOT/cluster_install/kickstart/master/default-packages.ks
+cat $CIA_ROOT/cluster_install/kickstart/master/packages >>$CIA_ROOT/cluster_install/kickstart/master/default-packages.ks
+cat $CIA_ROOT/cluster_install/kickstart/master/deleted >>$CIA_ROOT/cluster_install/kickstart/master/default-packages.ks
+echo "%end" >> $CIA_ROOT/cluster_install/kickstart/master/default-packages.ks
+
+rm -f $CIA_ROOT/cluster_install/kickstart/$KS_SCHEME.ks
+cat $CIA_ROOT/cluster_install/kickstart/master/$KS_SCHEME-* > $CIA_ROOT/cluster_install/kickstart/$KS_SCHEME.ks
+
+####################################################
+
+[ ! -f $CONFIG_FILE ] && echo "Config file not found." && exit 1
+
+echo "CIA $MASTER_ARCH 1 $MASTER_HOSTNAME PXE" > $GROUPS_INSTALL
+echo "$MASTER_IP $MASTER_HOSTNAME CIA $MASTER_ARCH "  > $HOSTS_INSTALL 
+
+[ -e /etc/rc.d/init.d/httpd ] && /etc/rc.d/init.d/httpd restart
+[ -e /etc/init.d/dhcpd ] && /etc/init.d/dhcpd stop
+
+mkdir -p /tftpboot/boot/$MASTER_ARCH/
+
+if [ ! -z "$LOCAL_DIR" ] ; then 
+	if [ ! -e $LOCAL_DIR/isolinux/vmlinuz ] ; then
+		echo "SO from $LOCAL_DIR  is incorrect!!!"
+		echo "$LOCAL_DIR/isolinux/vmlinuz  not found !!!"
+	else
+		cp  $LOCAL_DIR/isolinux/vmlinuz /tftpboot/boot/$MASTER_ARCH/
+		cp  $LOCAL_DIR/isolinux/initrd.img /tftpboot/boot/$MASTER_ARCH/
+	fi
+fi
+
+if [ ! -z "$HTTP_DIR" ] ; then
+	echo "Probando la conexión al medio http proporcionado: $HTTP_DIR "
+	cd /tmp
+	wget $HTTP_DIR/isolinux/isolinux.cfg 
+	[ $? -ne 0 ] && (read;exit) 
+	rm isolinux.cfg
+	wget $HTTP_DIR/isolinux/vmlinuz -O /tftpboot/boot/$MASTER_ARCH/vmlinuz
+	wget $HTTP_DIR/isolinux/initrd.img -O /tftpboot/boot/$MASTER_ARCH/initrd.img
+fi
+
+
+################################################################################
+
+
+################################################################################
+which tcpdump
+if [ $? -eq 1  ]  ; then  echo "tcpdump not found ..." && read ; fi
+
+which dhcpdump
+if [ $? -eq 1  ]  ; then  echo "dhcpdump not found ..." && read ; fi
+
+if [ ! -f $CONFIG_FILE ] ; then
+        ceho  ERROR "config file $CONFIG_FILE not found"
+        ceho ERROR "Please read $CIA_ROOT/README.txt"
+        ceho TAIL "exit cia configuration"
+        exit 255
+fi
+if [ ! -f $HOSTS_INSTALL ] ; then
+        ceho  ERROR "config file $HOSTS_INSTALL not found"
+        ceho ERROR "execute cluster_install create"
+        ceho TAIL "exit cia configuration"
+        exit 255
+fi
+
+rm -f $MAC_FILE
+
+BOOT_FILE="pxelinux/pxelinux.bin"
+
+	MAC_tmp=$MAC_NODE
+	if [ $(echo $MAC_tmp | awk -F: '{print NF}') -ne 6 ] ;then 
+		echo "$MAC_tmp is invalid !!" 
+		exit
+	else	
+		MACADDR=$MAC_tmp
+	fi
+	GETMAC=0
+
+touch /tmp/bad.mac
+while [ $GETMAC != 0 ] ;do
+MACADDR=""
+echo -n "
+** Waiting for $NODE_NAME MAC on $INSTALL_DEVICE "
+	if [ -z $MACADDR ] ; then
+#		MACADDR="$(tcpdump -qte -c 1 -i $INSTALL_DEVICE broadcast and port bootpc 2>/dev/null | cut -d' ' -f1)"
+#		MACADDR="$(tcpdump -c 1 -i $INSTALL_DEVICE -entl  port bootpc 2>/dev/null | cut -d' ' -f1)"
+VARS=($(tcpdump -lenx -s 1500 -c 1 -i $INSTALL_DEVICE port bootps or port bootpc 2>/dev/null | dhcpdump | grep -e ^CHADDR: -e ^"OPTION:  60"))
+MACADDR=${VARS[1]:0:17}
+VENDOR=${VARS[9]:0:9}
+	fi 
+
+	if [ ! -z $MACADDR ] ;then 
+		if grep -q $MACADDR /tmp/bad.mac ; then continue; fi 
+		echo "* $VENDOR: $MACADDR" 
+		echo -n "Continue with this MAC  y/n  [y]: "
+		read -n 1 resp
+		echo 
+		[ "$resp" == y ] || [ "$resp" == Y ] && GETMAC=0
+		[ -z $resp ] && GETMAC=0
+		 [ "$resp" == n ] || [ "$resp" == N ]  && echo $MACADDR >> /tmp/bad.mac && continue
+
+	fi
+done
+
+[ $GETMAC -eq  0 ] &&  echo "$MASTER_HOSTNAME $MASTER_IP $BOOT_FILE $MACADDR" >> $MAC_FILE
+
+
+if grep -q -w $MASTER_IP /etc/hosts ;then
+	sed 's/$MASTER_IP.*/$MASTER_IP\t$MASTER_HOSTNAME/' /etc/hosts > /etc/hosts.modif
+	cp /etc/hosts.modif /etc/hosts
+else
+	echo -e "$MASTER_IP\t$MASTER_HOSTNAME" >> /etc/hosts
+
+fi
+
+MAC=($(grep ^$MASTER_HOSTNAME $MAC_FILE))
+
+MAC=${MAC[3]}
+
+PXENAME_POST=01-$(echo $MAC | tr : -)
+
+########################################################################################
+echo "
+%post
+
+mkdir /cia
+mount $LOCAL_IP:$CIA_ROOT /cia  
+cd /usr/local/
+tar xzvf /cia/cluster_install/kickstart/cia.tgz
+tar xzvf /cia/cluster_install/kickstart/cia-utils.tgz
+">>  $CIA_ROOT/cluster_install/kickstart/$KS_SCHEME.ks
+
+if [ "$KS_SCHEME" == default ] ; then 
+
+echo "Post install ----> $POST_SCHEME  "
+
+echo " 
+cd cia-$CIA_VERSION/cluster_install/bin
+bash -x ci_post-install-master $POST_SCHEME  &> /root/cia.post
+" >>  $CIA_ROOT/cluster_install/kickstart/$KS_SCHEME.ks  
+fi
+
+
+echo "
+cat<<END > /cia/cluster_install/tftpboot/pxelinux/pxelinux.cfg/$PXENAME_POST
+default localboot
+display display.msg
+
+label localboot
+        LOCALBOOT 0
+END
+cd 
+umount /cia
+
+%end 
+" >>  $CIA_ROOT/cluster_install/kickstart/$KS_SCHEME.ks
+
+PXENAME=$(gethostip -x $MASTER_IP)
+
+ks="http://$LOCAL_IP/kickstart/$KS_SCHEME.ks "
+
+if [ ! -z $LOCAL_DIR ] ; then
+	repo="http://$LOCAL_IP/cia-install"
+else
+	repo="http://$LOCAL_IP/isos/$MASTER_ARCH"
+fi
+
+if [ ! -z $HTTP_DIR ] ; then
+	repo=$HTTP_DIR
+fi
+
+BOOT_PARAM="noselinux selinux=0 headless xdriver=vesa nomodeset sshd repo=$repo ks=$ks $GUI $VNC_EXTRA"
+
+#NET_PARAM="ip=$MASTER_IP hostname=$MASTER_HOSTNAME netmask=$MASTER_NETMASK nicdelay=60 linksleep=60 noipv6 ksdevice=$MACADDR"
+NET_PARAM="ip=dhcp nicdelay=60 linksleep=60 noipv6 ksdevice=$MACADDR"
+
+cat<<EOF> /tftpboot/pxelinux/pxelinux.cfg/$PXENAME
+default install
+prompt 1
+timeout 10
+display display.msg
+
+label localboot
+        LOCALBOOT 0
+
+label install
+
+	KERNEL ../boot/$MASTER_ARCH/vmlinuz
+	APPEND initrd=../boot/$MASTER_ARCH/initrd.img $NET_PARAM $BOOT_PARAM
+	IPAPPEND 2 
+EOF
+
+DATA=($(grep -v '^#' $MAC_FILE | grep '.'))
+NODENAME=${DATA[0]}
+IP=${DATA[1]}
+BOOT=${DATA[2]}
+MACADDR=${DATA[3]}
+
+echo -e "
+#############################################
+# dhcpd.conf configuration created by CIA
+#
+# $(hostname)
+# $(date +%A) $(date +%d) $(date +%B) $(date +%Y)
+#############################################
+
+ddns-update-style none;
+
+shared-network cluster{
+	subnet $MASTER_NETWORK netmask $MASTER_NETMASK { 
+		group {
+#		option vendor-class-identifier \"PXEClient\";
+                option domain-name-servers 8.8.8.8;
+		option subnet-mask $MASTER_NETMASK; 
+		option routers $LOCAL_IP;
+                filename \"$BOOT\";
+                next-server $LOCAL_IP;
+		host $NODENAME {
+			option host-name \"$NODENAME\";
+			hardware ethernet $MACADDR;
+			fixed-address $IP;
+		}
+
+		}
+	}
+        subnet $ALIAS_IP netmask $ALIAS_NETMASK {
+	option vendor-class-identifier \"udhcp\";
+        range $RANG_ALIAS;
+	}
+}" > $DHCP_CONF
+
+
+#echo "Restart server and press enter to continue ..."
+#read
+
+echo "DHCPDARGS=$INSTALL_DEVICE" > /etc/sysconfig/dhcpd
+if [ -e /etc/rc.d/init.d/dhcpd ] ; then  
+	/etc/rc.d/init.d/dhcpd restart 
+else	
+	killall dhcpd
+	dhcpd -cf $DHCP_CONF $INSTALL_DEVICE 
+fi 
+
+[ -e /etc/init.d/xinetd ] && /etc/init.d/xinetd restart 
+
+#checklog $MASTER_IP $MASTER_HOSTNAME $MASTER_ARCH $PXENAME  
+
+
+#echo "ctrl+c  to break ..." 
+tcpdump -lenx -s 1500  -i $INSTALL_DEVICE port bootps or port bootpc 2>/dev/null | dhcpdump | \
+grep  -e FNAME: -e "DHCP message type" 
+
+####################################################3
+# > /var/lib/dhcpd/dhcpd.leases
+# killall dhcpd; dhcpd -cf /etc/dhcp/dhcpd.conf eth0
+# ifconfig eth0:1 192.168.0.100
+#
+

@@ -1,0 +1,62 @@
+#!/bin/bash 
+
+returnPrefixIP(){
+IP=$1
+NETMASK=$2
+ipcalc -p $IP $NETMASK | cut -d= -f2
+}
+
+returnNetmaskIP(){
+IP=$1
+ipcalc -m $IP | cut -d= -f2 
+}
+
+returnNetworkIP(){
+IP=$1
+NETMASK=$2
+ipcalc -n $IP $NETMASK | cut -d= -f2
+
+}
+
+returnIpmiIP(){
+ADMIN_IP=$1
+PREFIX=$2
+
+if [ $PREFIX -eq 16 ] ; then 
+
+echo $ADMIN_IP | awk -F. '{print $1"."$2-1"."$3"."$4}'
+
+else
+
+echo $ADMIN_IP | awk -F. '{print $1"."$2"."$3-1"."$4}'
+
+fi
+
+}
+
+returnAdminIP(){
+
+IPMI_IP=$1
+PREFIX=$2
+
+if [ $PREFIX -eq 16 ] ; then 
+
+echo $IPMI_IP | awk -F. '{print $1"."$2+1"."$3"."$4}'
+
+else
+
+echo $IPMI_IP | awk -F. '{print $1"."$2"."$3+1"."$4}'
+
+fi
+
+}
+
+returnValidIP(){
+IP=$1
+ipcalc -c $IP
+
+return $?
+
+}
+
+

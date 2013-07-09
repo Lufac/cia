@@ -1,0 +1,127 @@
+#!/bin/bash 
+
+returnAdminMac(){
+
+IP_IPMI=$1
+ipmitool -U ADMIN -P ADMIN -H $IP_IPMI  raw 0x30 0x21 | tr " " : | cut -d : -f6-11
+}
+
+
+setupTftp(){
+ROOT_DIR=$1
+
+rpm -qf /etc/xinetd.d/tftp &>/dev/null 
+if [ $? -ne 0  ] ;then
+        echo ERROR "tftp-server not found.  Try yum -y install tftp-server"
+        exit 255
+
+fi
+
+rm -rf $ROOT_DIR/tftpboot $CIA_ROOT/cluster_install/tftpboot
+mkdir -p $ROOT_DIR/tftpboot/pxelinux/pxelinux.cfg/
+mkdir -p $ROOT_DIR/tftpboot/boot
+ln -svf $CIA_ROOT/cluster_install/tftpboot $ROOT_DIR/tftpboot
+
+cat>/etc/xinetd.d/tftp<<EOF
+service tftp
+{
+	disable	= on
+	socket_type		= dgram
+	protocol		= udp
+	wait			= yes
+	user			= root
+	server			= /usr/sbin/in.tftpd
+	server_args		= -v -v -v -s $ROOT_DIR/tftpboot
+	per_source		= 11
+	cps			= 100 2
+	flags			= IPv4
+}
+
+EOF
+
+/etc/init.d/xinetd restart
+
+}
+
+
+setupSyslinux(){
+
+ROOT_DIR=$1
+
+rpm -qf /usr/share/syslinux/pxelinux.0 &>/dev/null
+
+
+if [ $? -ne 0  ] ;then
+        echo ERROR "syslinux not found.  Try yum -y install syslinux"
+        exit 255
+
+fi
+
+cp -v /usr/share/syslinux/pxelinux.0 /tftpboot/pxelinux/pxelinux.bin
+
+
+}
+
+
+setupLocalHosts(){
+sed 's/127\.0\.0\.1.*localhost/127.0.0.1 localhost.localdomain localhost/g' /etc/hosts > /etc/hosts.modif
+cp /etc/hosts.modif /etc/hosts
+
+}
+
+setupHotsname(){
+
+LOCAL_IP=$1
+LOCAL_HOSTNAME=$2
+
+if  grep -q $LOCAL_IP /etc/hosts ;then
+    sed "s/$LOCAL_IP.*/$LOCAL_IP\t $LOCAL_HOSTNAME/" /etc/hosts >  /etc/hosts.modif
+    cp /etc/hosts.modif /etc/hosts
+else
+        echo -e "$LOCAL_IP\t $LOCAL_HOSTNAME" >> /etc/hosts
+fi
+
+
+}
+
+setupRepoHttp(){
+LOCAL_DIR=$1
+MASTER_NETWORK=$2
+MASTER_NETMASK=$3
+
+cat>>/etc/httpd/conf.d/cia_httpd.conf <<END
+
+Alias /cia-repo $LOCAL_DIR
+<Location /cia-repo>
+    Options Indexes
+    Order deny,allow
+    Deny from all
+    Allow from 127.0.0.1
+    Allow from $MASTER_NETWORK/$MASTER_NETMASK
+</Location>
+
+END
+
+
+}
+
+setupKickstartHttpd(){
+CIA_ROOT=$1
+MASTER_NETWORK=$2
+MASTER_NETMASK=$3
+
+cat>/etc/httpd/conf.d/cia_httpd.conf <<END
+
+Alias /cia-kickstart $CIA_ROOT/cluster_install/kickstart
+<Location /cia-kickstart>
+    Options Indexes
+    Order deny,allow
+    Deny from all
+    Allow from 127.0.0.1
+    Allow from $MASTER_NETWORK/$MASTER_NETMASK
+</Location>
+
+END
+
+}
+

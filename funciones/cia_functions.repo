@@ -1,0 +1,44 @@
+#!/bin/bash 
+
+setupRepoHttp(){
+LOCAL_DIR=$1
+MASTER_NETWORK=$2
+MASTER_NETMASK=$3
+
+cat>>/etc/httpd/conf.d/cia_httpd.conf <<END
+
+Alias /cia-repo $LOCAL_DIR
+<Location /cia-repo>
+    Options Indexes
+    Order deny,allow
+    Deny from all
+    Allow from 127.0.0.1
+    Allow from $MASTER_NETWORK/$MASTER_NETMASK
+</Location>
+
+END
+
+
+}
+
+setupKickstartHttpd(){
+CIA_ROOT=$1
+MASTER_NETWORK=$2
+MASTER_NETMASK=$3
+
+cat>/etc/httpd/conf.d/cia_httpd.conf <<END
+
+Alias /cia-kickstart $CIA_ROOT/cluster_install/kickstart
+<Location /cia-kickstart>
+    Options Indexes
+    Order deny,allow
+    Deny from all
+    Allow from 127.0.0.1
+    Allow from $MASTER_NETWORK/$MASTER_NETMASK
+</Location>
+
+END
+
+}
+
+

@@ -1,0 +1,82 @@
+#!/bin/bash 
+
+NODE_NAME=$1
+NODE_IP=$2 
+INSTALL_DEVICE=$3
+BOOT_DEVICE=$4
+
+source cia_functions.dhcp
+source cia_functions.ip  
+source cia_functions.ipmi
+source cia_functions.repo
+source cia_functions.tftp
+
+NODE_NAME=$NODE_NAME.ipmi
+DHCP_FILE=/tmp/dhcpd.conf.cia
+
+
+NETMASK_ADMIN=$(returnNetmaskIP $NODE_IP)
+NETMASK_IPMI=$NETMASK_ADMIN
+
+NETWORK_ADMIN=$(returnNetworkIP $NODE_IP $NETMASK_ADMIN)
+NETWORK_IPMI=$NETWORK_ADMIN
+
+NODE_IPMI=$(returnIpmiIP $NODE_IP $(returnPrefixIP $NODE_IP  $NETMASK_ADMIN)  )
+
+if [ $(returnPrefixIP $NODE_IPMI $NETMASK_IPMI ) -eq 16  ] ; then
+
+ROUTER_ADMIN=$(echo $NODE_IP | awk -F. '{print $1"."$2".253.253"}')
+ROUTER_IPMI=$(echo $NODE_IPMI | awk -F. '{print $1"."$2".253.253"}')
+
+else
+ROUTER_ADMIN=$(echo $NODE_IP | awk -F. '{print $1"."$2"."$3".253"}')
+ROUTER_IPMI=$(echo $NODE_IPMI | awk -F. '{print $1"."$2"."$3".253"}')
+
+fi
+DNS_ADMIN=8.8.8.8           
+DNS_IPMI=$DNS_IPMI
+
+writeHeadDhcpConf > $DHCP_FILE 
+writeSubnetIpmiConf  $SUBNET_IPMI $NETMASK_IPMI $ROUTER_IPMI $DNS_IPMI >> $DHCP_FILE
+
+while :; do
+echo "Waiting data for node $NODE_NAME ..."                                     
+DATA=($(returnDhcpInfo $INSTALL_DEVICE 2>/dev/null  ))
+                                     
+DHCP_MESS=${DATA[0]}                 
+MAC_IPMI=${DATA[1]}              
+DHCP_CLIENT=${DATA[2]}               
+
+if [ "$DHCP_CLIENT" == "udhcp" ] ; then
+
+echo "$DHCP_MESS: Write configuration for $NODE_NAME ($MAC_IPMI) " 
+
+writeNodeIpmiConf $NODE_NAME $MAC_IPMI $NODE_IPMI >> $DHCP_FILE
+break 
+else 
+
+echo "\t++++++Ignoring $DHCP_MESS with Vendor $DHCP_CLIENT"
+continue
+fi 
+
+done 
+
+writeTailIpmiConf >> $DHCP_FILE
+writeSubnetAdminConf  $SUBNET_ADMIN $NETMASK_ADMIN $ROUTER_ADMIN $DNS_ADMIN >> $DHCP_FILE
+writeTailAdminConf >> $DHCP_FILE
+writeTailDhcpConf >> $DHCP_FILE 
+
+startDhcpService $INSTALL_DEVICE  2>/dev/null
+
+echo "Set $NODE_IPMI  IPMI IP Static  & boot PXE  "
+
+setIpmiStatic $NODE_IPMI
+
+
+if [ "$BOOT_DEVICE" == "BIOS" ] ;then 
+setIpmiBootBios $NODE_IPMI
+else
+setIpmiBootPxe $NODE_IPM
+fi 
+
+

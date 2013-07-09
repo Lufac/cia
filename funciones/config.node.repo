@@ -1,0 +1,14 @@
+#!/bin/bash 
+
+NODE_IP=$1
+REPO_DIR=$2
+
+
+NODE_NETMASK=$(returnNetmaskIP)                      
+NODE_PREFIX=$(returnPrefixIP $NODE_IP $NODE_NETMASK) 
+NODE_NETWORK=$(returnNetworkIP $NODE_NETMASK)        
+                                                     
+
+setupRepoHttp $REPO_DIR $NODE_NETWORK $NODE_NETMASK 
+
+

@@ -1,0 +1,150 @@
+#!/bin/bash 
+
+#CHADDR: 00:1b:38:2d:a8:cc:00:00:00:00:00:00:00:00:00:00 OPTION: 53 ( 1) DHCP message type 1 (DHCPDISCOVER) OPTION: 60 ( 32) Vendor class identifier PXEClient:Arch:00000:UNDI:002001
+
+returnDhcpInfo(){
+trap return 1 2 5  
+INSTALL_DEVICE=$1
+
+N_PACK=$2
+[ -z $N_PACK ] && N_PACK=1
+DHCP_DUMP=dhcpdump
+
+DATA=($(tcpdump -lenx -s 1500 -c $N_PACK -i $INSTALL_DEVICE port bootps or port bootpc 2>/dev/null | $DHCP_DUMP 2>/dev/null | grep -e "OPTION:  53" -e "CHADDR:" -e "OPTION:  60"))
+DHCP_MESS=${DATA[10]}
+MAC_IPMI=$(echo ${DATA[1]} | cut -d: -f1-6)
+DHCP_CLIENT=$(echo ${DATA[18]} | cut -d: -f1)
+
+echo $DHCP_MESS $MAC_IPMI $DHCP_CLIENT 
+
+}
+
+
+###############################################################################
+###############################################################################
+writeHeadDhcpConf(){
+
+echo -e "
+#############################################
+# dhcpd.conf configuration created by CIA
+#
+# $(hostname)
+# $(date +%A) $(date +%d) $(date +%B) $(date +%Y)
+#############################################
+
+ddns-update-style none;
+shared-network cluster{"
+}
+
+
+###############################################################################
+###############################################################################
+writeTailDhcpConf(){
+echo "
+}" 
+
+}
+
+
+###############################################################################
+###############################################################################
+writeSubnetIpmiConf(){
+SUBNET_IPMI=$1
+NETMASK_IPMI=$2
+ROUTER_IPMI=$3
+DNS_IPMI=$4
+
+echo "
+       subnet $SUBNET_IPMI netmask $NETMASK_IPMI { 
+                group {
+                option domain-name-servers $DNS_IPMI;
+                option subnet-mask $NETMASK_IPMI; 
+                option routers $ROUTER_IPMI;
+##START
+##NODES IPMI DEFINITIONS"
+}
+
+###############################################################################
+###############################################################################
+writeSubnetAdminConf(){
+SUBNET_ADMIN=$1
+NETMASK_ADMIN=$2
+ROUTER_ADMIN=$3
+DNS_ADMIN=$4
+
+echo "
+       subnet $SUBNET_ADMIN netmask $NETMASK_ADMIN { 
+                group {
+                option domain-name-servers $DNS_ADMIN;
+                option subnet-mask $NETMASK_ADMIN; 
+                option routers $ROUTER_ADMIN;
+                filename \"pxelinux/pxelinux.bin\";
+                next-server $ROUTER_ADMIN;
+##START
+##NODES ADMIN DEFINITIONS" 
+}
+
+
+###############################################################################
+###############################################################################
+writeNodeIpmiConf(){
+NAME_IPMI=$1
+MAC_IPMI=$2
+IP_IPMI=$3
+
+echo "
+                host $NAME_IPMI {
+                        option host-name \"$NAME_IPMI\";
+                        hardware ethernet $MAC_IPMI;
+                        fixed-address $IP_IPMI;
+                        }" 
+}
+
+###############################################################################
+###############################################################################
+writeNodeAdminConf(){
+NAME_ADMIN=$1
+MAC_ADMIN=$2
+IP_ADMIN=$3
+
+echo "
+                host $NAME_ADMIN {
+                        option host-name \"$NAME_ADMIN\";
+                        hardware ethernet $MAC_ADMIN;
+                        fixed-address $IP_ADMIN;
+                        }" 
+}
+
+###############################################################################
+###############################################################################
+writeTailIpmiConf(){
+echo "	       } 
+        }" 
+}
+
+###############################################################################
+###############################################################################
+writeTailAdminConf(){
+echo "             } 
+       }"  
+}
+
+###############################################################################
+###############################################################################
+function startDhcpService(){
+INSTALL_DEVICE=$1
+trap "killall dhcpd 2>/dev/null ;return" 1 2 5
+
+#echo "Despues de asignada la IP Ctrl+C  para continuar."
+echo "#" > /tmp/lease.file.cia 
+echo "#" > /tmp/log.file.cia 
+
+dhcpd  -4  -d -cf /tmp/dhcpd.conf.cia  -lf /tmp/lease.file.cia  $INSTALL_DEVICE &> /tmp/log.file.cia &
+
+while :; do sleep 1; grep -m 1 DHCPACK /tmp/log.file.cia && break ; done 
+killall -TERM dhcpd &>/dev/null
+
+}
+
+
+
