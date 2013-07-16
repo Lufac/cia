@@ -1,0 +1,1 @@
+yum install opensm.x86_64 compat-opensm-libs.x86_64 infiniband-diags.x86_64  infiniband-diags-devel.x86_64 perftest.x86_64

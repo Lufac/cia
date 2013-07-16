@@ -1,0 +1,10 @@
+modprobe ib_mthca
+modprobe iw_cxgb3
+modprobe iw_nes
+modprobe mlx4_ib
+modprobe rdma_ucm
+modprobe ib_umad
+modprobe ib_uverbs
+modprobe ib_ipoib
+modprobe ib_srp
+modprobe ib_sdp
