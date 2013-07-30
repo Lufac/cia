@@ -1,8 +1,10 @@
 <?php 
 
-if(!@include_once('./Logging.php') ) {
-    echo 'can not include';
-}
+include_once "./Logging.php";
+include_once "./packages.php";
+include_once "./post.php";
+include_once "./valida.php";
+include_once "./error.php";
 
 function write_general_options(& $ksfile){
 $ksfile .= "
@@ -29,15 +31,18 @@ function ip_netmask($ip) {
   return "$mask";
 }
 
-function write_network(& $ksfile, $ip_server,$ip_node,$netmask,$gw,$host){
+function write_network(& $ksfile, $gw,$host){
+$ip_server = $_SERVER['SERVER_ADDR'];
+$ip_node = $_SERVER['REMOTE_ADDR'];
+$netmask = ip_netmask($ip_node);
 $ksfile .= "
 url --url http://$ip_server/centos6
 network --bootproto=static --device=eth0 --ip=$ip_node --netmask=$netmask --gateway=$gw --nameserver=8.8.8.8 --hostname $host
 ";
 }
 
-function write_bootloader(& $ksfile, $ks_type){
-  if(!strcmp($ks_type,"nvidia")){
+function write_bootloader(& $ksfile, $accel){
+  if(!strcmp($accel,"cuda")){
     $ksfile .= "
 bootloader --location=mbr --append=\"elevator=deadline nomodeset rdblacklist=nouveau nouveau.modeset=0 console=ttyS1,115200 console=tty0\"
     ";
@@ -48,8 +53,8 @@ bootloader --location=mbr --append=\"elevator=deadline nomodeset console=ttyS1,1
   };
 }
 
-function write_partioning(& $ksfile, $ks_type){
-  if(!strcmp($ks_type,"RAID")){
+function write_partioning(& $ksfile, $storage){
+  if(!strcmp($storage,"softraid")){
     $ksfile .= "
 clearpart --all
 part raid.01 --size=10000  --ondisk=sda
@@ -78,64 +83,62 @@ services --enabled rsh,rlogin,ntpd,cpuspeed,ipmi
     ";
 }
 
-function write_packages(& $ksfile){
-  $ksfile .= "
-install
-%packages --ignoremissing
-@base
-@Development Tools
-cmake
-zlib-devel
-boost-devel
-python-devel
-  ";
-}
-
-function write_post(& $ksfile, $ks_type, $bench_type, $ip_server){
-  $ksfile .= "
-/etc/init.d/sshd start
-cd /root
-wget http://192.168.1.250/scripts/install_rpmforge.sh &> install_rpmforge.log
-bash install_rpmforge.sh &>> install_rpmforge.log
-  ";
-  if(!strcmp($ks_type,"nvidia")){
-    $ksfile .= "
-wget http://$ip_server/scripts/install_cuda_sdk.sh &> install.cuda.log
-bash install_cuda_sdk.sh &>> install.cuda.log
-    ";
-  }
-  if(!strcmp($bench_type,"benchmark")){
-    $ksfile .= "
-wget http://$ip_server/scripts/make_bench_shoc.sh &> shoc.bench.log
-bash make_bench_shoc.sh &>> shoc.bench.log
-wget http://$ip_server/scripts/make_bench_hoomd.sh &> hoomd.bench.log
-bash make_bench_hoomd.sh &>> hoomd.bench.log
-  ";
-  };
-}
-
 header("Content-Type: text/plain");
-$ks_type = $_GET["ks_type"];
+//Read Install Parameters
+$errores = new Error_cia();
+valid_kstype($errores,$ks_type);
+if (isset($_GET['accel'])) {
+  $accel = $_GET['accel'];
+} else {
+  $accel = "none";
+}
+if (isset($_GET['storage'])) {
+  $storage = $_GET['storage'];
+} else {
+  $storage = "none";
+}
+if (isset($_GET['bench'])) {
+  $bench = $_GET['bench'];
+} else {
+  $bench = "none";
+}
+
+//Network parameters
 $ip_server = $_SERVER['SERVER_ADDR'];
 $ip_node = $_SERVER['REMOTE_ADDR'];
 $netmask = ip_netmask($ip_node);
-$gw = $_GET["gw"];
-$hostname = $_GET["hostname"];
-$ksfile = "####Tipo de kickstart: $ks_type\n";
-$bench_type = $_GET["bench"];
+if (isset($_GET['gw'])) {
+  $gw = $_GET['gw'];
+} else {
+  $gw = $ip_server;
+}
+if (isset($_GET['hostname'])) {
+  $hostname = $_GET['hostname'];
+} else {
+  $hostname = "master"; 
+}
+
 $log = new Logging();
 $log->lfile('/tmp/mylog.txt');
 $log->lwrite("Generando kickstart para: $ip_node");
-if ( !strcmp($ks_type,"nvidia") or !strcmp($ks_type,"RAID") or !strcmp($ks_type,"default") ) {
+if ( !$errores->getErrorFlag() ) {
+  $ksfile = "#### CIA installation Kickstart (ch3m)  #####\n";
+  $ksfile .= "#### Kickstart type: $ks_type\n";
+  $ksfile .= "#### Storage type: $storage\n";
+  $ksfile .= "#### Accelerator type: $accel\n";
+  $ksfile .= "#### Benchmark type: $bench\n";
+  $ksfile .= "#### Hostname: $hostname\n"; 
+  $ksfile .= "#### Gateway: $gw\n"; 
+
   write_general_options($ksfile);
-  write_network($ksfile,$ip_server,$ip_node,$netmask,$gw,$hostname);
-  write_bootloader($ksfile,$ks_type);
-  write_partioning($ksfile,$ks_type);
+  write_network($ksfile, $gw, $hostname);
+  write_bootloader($ksfile, $accel);
+  write_partioning($ksfile, $storage);
   write_services($ksfile);
-  write_packages($ksfile); 
-  write_post($ksfile,$ks_type, $bench_type, $ip_server);
+  write_packages($ksfile,$ks_type); 
+  write_post($ksfile, $accel, $bench);
 }else{
-  echo "####Error en la generacion del kickstart\n";
+  $errores->print_error();
 }
 echo $ksfile;
 $log->lwrite($ksfile);
