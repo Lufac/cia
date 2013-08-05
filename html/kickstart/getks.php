@@ -5,6 +5,7 @@ include_once "./packages.php";
 include_once "./post.php";
 include_once "./valida.php";
 include_once "./error.php";
+include_once "./partition.php";
 
 function write_general_options(& $ksfile){
 $ksfile .= "
@@ -50,29 +51,6 @@ bootloader --location=mbr --append=\"elevator=deadline nomodeset rdblacklist=nou
     $ksfile .= "
 bootloader --location=mbr --append=\"elevator=deadline nomodeset console=ttyS1,115200 console=tty0\"
   ";
-  };
-}
-
-function write_partioning(& $ksfile, $storage){
-  if(!strcmp($storage,"softraid")){
-    $ksfile .= "
-clearpart --all
-part raid.01 --size=10000  --ondisk=sda
-part raid.02 --size=10000 --ondisk=sda
-
-part raid.03 --size=10000  --ondisk=sdb
-part raid.04 --size=10000 --ondisk=sdb
-
-raid / --level=RAID1 --device=md0 --fstype=ext4 raid.01 raid.03
-raid /home  --level=RAID1 --device=md1 --fstype=ext4 raid.02 raid.04
-    ";
-  }else{
-    $ksfile .= "
-clearpart --all
-part /boot --asprimary --fstype=ext4 --size=100 --bytes-per-inode=4096
-part swap --asprimary --fstype=swap --recommended --bytes-per-inode=4096
-part / --asprimary --fstype=ext4 --grow --size=10000 --bytes-per-inode=4096
-    ";
   };
 }
 

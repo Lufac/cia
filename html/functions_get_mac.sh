@@ -11,10 +11,12 @@
 # OPTIONS: 
 # REQUIREMENTS: 
 # BUGS: 
-#   1- Validar que en cada funcion todas las variables 
-#   2- Validar que los archivos donde se escriba existan
-#   3- Por algo el ciclo de cachar la MAC del DHCP no regresa cero
-#   4. Personalizar un kickstart
+#   1.- Validar que en cada funcion todas las variables 
+#   2.- Validar que los archivos donde se escriba existan
+#   3.- Por algo el ciclo de cachar la MAC del DHCP no regresa cero
+#   4.- Personalizar un kickstart
+#   5.- Agregar soporte para diferentes subredes 
+#   6.- Construir estructura de directorios si no existe /var/lib/tftpboot
 # NOTES: 
 # AUTHOR: M. en C. Jose Maria Zamora Fuentes
 # COMPANY: Lufac Computacion
@@ -46,6 +48,7 @@ function getMacAdress(){
   if [ $? -eq 1  ]  ; then  echo "dhcpdump not found ..." && read ; fi
   rm -f $MAC_FILE
   BOOT_FILE="pxelinux/pxelinux.bin"
+  [[ -f /tmp/bad.mac ]] && rm -f /tmp/bad.mac
   touch /tmp/bad.mac
   GETMAC=1
   while [ $GETMAC != 0 ] ;do
@@ -186,30 +189,37 @@ function write_new_dhcpd(){
 ddns-update-style none;
 ignore client-updates;
 
-subnet 192.168.1.0 netmask 255.255.255.0 {
-        range 192.168.1.10 192.168.1.254;
+subnet 172.16.0.0 netmask 255.255.0.0 {
+        range 172.16.1.1 172.16.255.254;
         default-lease-time 3600;
         max-lease-time 4800;
-        option subnet-mask 255.255.255.0;
+        option subnet-mask 255.255.0.0;
 
 ######Last Entry
 
-}
 }" > $DHCP_CONF
   fi
 }
 
 function valid_hostname(){
   [[ -z $NAME_TARGET ]] && die "configure_dhcpd var NAME_TARGET unset"
+  flag=false
+  old_name=$NAME_TARGET
   while : ; do
     VAR=$(egrep "^[[:space:]]+host" /etc/dhcp/dhcpd.conf | awk '{print $2}' | egrep "^$NAME_TARGET$")
     if [ -z "$VAR" ]; then
       break
     fi
+    #Se borra la entrada del dhcpd
+    flag=true
     echo "hostname $NAME_TARGET of target in use..."
     echo -n "** Please input hostname:  "
     read NAME_TARGET
   done
+  if $flag ;then
+    echo "delete dhcpd entry for $old_name..."
+    sed -i -e "/^[ \t]*host[ \t]*"$old_name"[ \t]*{/{N;N;N;N;N;d;}" /etc/dhcp/dhcpd.conf
+  fi
   echo "free hostname $NAME_TARGET..."
 }
 
@@ -231,6 +241,15 @@ function start_services(){
   [ -e /etc/init.d/xinetd ] && /etc/init.d/xinetd restart 
   [ -e /etc/init.d/httpd ] && /etc/init.d/httpd restart 
 }
+
+function stop_dhcp(){
+  if [ "$(pidof dhcpd)" != "" ]; then
+    echo "dhcpd prendido"
+    /etc/init.d/dhcpd stop
+  else
+    echo "dhcpd apagado"
+  fi
+}
  
 #=== FUNCTION ================================================================
 # NAME: install_node_master
@@ -239,24 +258,25 @@ function start_services(){
 # RETURN
 #===============================================================================
 function install_node_master(){
-  INSTALL_DEVICE="eth0" 
+  INSTALL_DEVICE="eth0:1" 
   TARGET_DEVICE="eth0"
-  NAME_TARGET="kepler"
-  IP_TARGET="192.168.1.210"
+  NAME_TARGET=$1
+  IP_TARGET="172.16.1.210"
   BOOTFILE="pxelinux/pxelinux.0"
   DHCP_CONF="/etc/dhcp/dhcpd.conf"
   GUI_CONF="vnc"
-  LOCAL_IP=$(ip addr show eth0 | grep "inet " | awk '{print $2}' | cut -d\/ -f1)
+  LOCAL_IP=$(ip addr show $INSTALL_DEVICE | grep $INSTALL_DEVICE | grep "inet " | awk '{print $2}' | cut -d\/ -f1)
 #  VNC_EXTRA="vncconnect=$LOCAL_IP"
   MASTER_ARCH="x86_64"
-  GW="192.168.1.1"
-  KS_SCHEME="getks.php?ks_type=base&gw=$GW&accel=cuda"
+  GW="172.16.1.1"
+  KS_SCHEME="getks.php?ks_type=base&gw=$GW&accel=cuda&storage=softraid&bench=on"
 #  repo="repo=http://$LOCAL_IP/isos/$MASTER_ARCH"
   ks="ks=http://$LOCAL_IP/kickstart/$KS_SCHEME"
   BOOT_PARAM="noselinux selinux=0 headless xdriver=vesa nomodeset sshd $repo $ks $GUI_CONF $VNC_EXTRA"
   NET_PARAM="ip=dhcp nicdelay=60 linksleep=60 noipv6 ksdevice=$TARGET_DEVICE"
   TFTP_DIR="/var/lib/tftpboot/pxelinux/pxelinux.cfg"
   MACADDR=""
+  stop_dhcp
   valid_hostname
   getMacAdress
   writePXE
