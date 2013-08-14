@@ -65,21 +65,9 @@ header("Content-Type: text/plain");
 //Read Install Parameters
 $errores = new Error_cia();
 valid_kstype($errores,$ks_type);
-if (isset($_GET['accel'])) {
-  $accel = $_GET['accel'];
-} else {
-  $accel = "none";
-}
-if (isset($_GET['storage'])) {
-  $storage = $_GET['storage'];
-} else {
-  $storage = "none";
-}
-if (isset($_GET['bench'])) {
-  $bench = $_GET['bench'];
-} else {
-  $bench = "none";
-}
+valid_accel($errores,$accel);
+valid_storage($errores,& $storage);
+valid_bench($errores,& $benchmarks);
 
 //Network parameters
 $ip_server = $_SERVER['SERVER_ADDR'];
@@ -104,7 +92,7 @@ if ( !$errores->getErrorFlag() ) {
   $ksfile .= "#### Kickstart type: $ks_type\n";
   $ksfile .= "#### Storage type: $storage\n";
   $ksfile .= "#### Accelerator type: $accel\n";
-  $ksfile .= "#### Benchmark type: $bench\n";
+  $ksfile .= "#### Benchmark type: ".implode(", ", array_keys($benchmarks))."\n";
   $ksfile .= "#### Hostname: $hostname\n"; 
   $ksfile .= "#### Gateway: $gw\n"; 
 
@@ -114,9 +102,9 @@ if ( !$errores->getErrorFlag() ) {
   write_partioning($ksfile, $storage);
   write_services($ksfile);
   write_packages($ksfile,$ks_type); 
-  write_post($ksfile, $accel, $bench);
+  write_post($ksfile, $accel, $benchmarks);
 }else{
-  $errores->print_error();
+  $ksfile = $errores->getErrorStr();
 }
 echo $ksfile;
 $log->lwrite($ksfile);

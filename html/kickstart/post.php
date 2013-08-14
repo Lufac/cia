@@ -1,5 +1,5 @@
 <?php
-function write_post(& $ksfile, $accel, $bench_type){
+function write_post(& $ksfile, $accel, $benchmarks){
   $ip_server = $_SERVER['SERVER_ADDR'];
   $ksfile .= "
 %end
@@ -12,24 +12,33 @@ cd .install_post
 wget http://$ip_server/scripts/install_rpmforge.sh &> install_rpmforge.log
 bash install_rpmforge.sh &>> install_rpmforge.log
   ";
-  if(!strcmp($accel,"cuda")){
+  
+  //INSTALL CUDA
+  if(!strcmp($accel,"cuda"))
     $ksfile .= "
 wget http://$ip_server/scripts/install_cuda_sdk.sh &> install.cuda.log
 bash install_cuda_sdk.sh $ip_server &>> install.cuda.log
     ";
-  }
-  if(!strcmp($bench_type,"on")){
+
+  //BENCHMARKS
+  if(isset($benchmarks['shoc']))
     $ksfile .= "
 wget http://$ip_server/scripts/make_bench_shoc.sh &> shoc.bench.log
 bash make_bench_shoc.sh $ip_server &>> shoc.bench.log
+    ";
+  if(isset($benchmarks['hoomd_openmp']))
+    $ksfile .= "
 wget http://$ip_server/scripts/make_bench_hoomd_openmp.sh &> hoomd.bench_openmp.log
 bash make_bench_hoomd_openmp.sh $ip_server &>> hoomd.bench_openmp.log
+    ";
+  if(isset($benchmarks['hoomd_cuda']))
+    $ksfile .= "
 wget http://$ip_server/scripts/make_bench_hoomd_cuda.sh &> hoomd.bench_cuda.log
 bash make_bench_hoomd_cuda.sh $ip_server &>> hoomd.bench_cuda.log
-  ";
+    ";
+
   $ksfile .= "
 %end
   ";
-  };
 }
 ?>
