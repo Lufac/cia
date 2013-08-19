@@ -4,7 +4,7 @@ function write_packages(& $ksfile,$ks_type){
 install
 %packages --ignoremissing
   ";
-  if(!strcmp($ks_type,"base")){
+  if(!strcmp($ks_type,"base") || !strcmp($ks_type,"master") ){
     $ksfile .= "
 @additional-devel
 @ backup-server

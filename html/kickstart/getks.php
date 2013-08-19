@@ -65,7 +65,7 @@ header("Content-Type: text/plain");
 //Read Install Parameters
 $errores = new Error_cia();
 valid_kstype($errores,$ks_type);
-valid_accel($errores,$accel);
+valid_accel($errores,$accel,$accel_type_install);
 valid_storage($errores,& $storage);
 valid_bench($errores,& $benchmarks);
 
@@ -88,21 +88,22 @@ $log = new Logging();
 $log->lfile('/tmp/mylog.txt');
 $log->lwrite("Generando kickstart para: $ip_node");
 if ( !$errores->getErrorFlag() ) {
-  $ksfile = "#### CIA installation Kickstart (ch3m)  #####\n";
+  $ksfile = "#### CIA inatallation Kickstart (ch3m)  #####\n";
   $ksfile .= "#### Kickstart type: $ks_type\n";
   $ksfile .= "#### Storage type: $storage\n";
   $ksfile .= "#### Accelerator type: $accel\n";
+	$ksfile .= "#### Accelerator install: $accel_type_install\n";
   $ksfile .= "#### Benchmark type: ".implode(", ", array_keys($benchmarks))."\n";
   $ksfile .= "#### Hostname: $hostname\n"; 
   $ksfile .= "#### Gateway: $gw\n"; 
 
   write_general_options($ksfile);
   write_network($ksfile, $gw, $hostname);
-  write_bootloader($ksfile, $accel);
+  write_bootloader($ksfile, $accel, $accel_type_install);
   write_partioning($ksfile, $storage);
   write_services($ksfile);
   write_packages($ksfile,$ks_type); 
-  write_post($ksfile, $accel, $benchmarks);
+  write_post($ksfile, $accel, $accel_type_install, $benchmarks, $ks_type);
 }else{
   $ksfile = $errores->getErrorStr();
 }

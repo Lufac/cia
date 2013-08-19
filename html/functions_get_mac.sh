@@ -258,18 +258,18 @@ function stop_dhcp(){
 # RETURN
 #===============================================================================
 function install_node_master(){
-  INSTALL_DEVICE="eth0:1" 
+  INSTALL_DEVICE="eth0" 
   TARGET_DEVICE="eth0"
   NAME_TARGET=$1
-  IP_TARGET="172.16.1.210"
+  IP_TARGET="192.168.1.210"
   BOOTFILE="pxelinux/pxelinux.0"
   DHCP_CONF="/etc/dhcp/dhcpd.conf"
   GUI_CONF="vnc"
-  LOCAL_IP=$(ip addr show $INSTALL_DEVICE | grep $INSTALL_DEVICE | grep "inet " | awk '{print $2}' | cut -d\/ -f1)
+  LOCAL_IP=$(ip addr show $INSTALL_DEVICE |  grep "inet " | awk -v r=$INSTALL_DEVICE '{if ($7 == r) print $0;}'| awk '{print $2}' | cut -d\/ -f1)
 #  VNC_EXTRA="vncconnect=$LOCAL_IP"
   MASTER_ARCH="x86_64"
-  GW="172.16.1.1"
-  KS_SCHEME="getks.php?ks_type=base&gw=$GW&accel=cuda&storage=softraid&bench=on"
+  GW="192.168.1.1"
+  KS_SCHEME="getks.php?ks_type=base&gw=$GW&hostname=$NAME_TARGET&accel=cuda&storage=soft_raid&bench=bonnie,hoomd_openmp,hoomd_cuda"
 #  repo="repo=http://$LOCAL_IP/isos/$MASTER_ARCH"
   ks="ks=http://$LOCAL_IP/kickstart/$KS_SCHEME"
   BOOT_PARAM="noselinux selinux=0 headless xdriver=vesa nomodeset sshd $repo $ks $GUI_CONF $VNC_EXTRA"

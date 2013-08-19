@@ -9,6 +9,7 @@ function valid_kstype($err,& $kstype){
     $valido = False;
     if(!strcmp($kstype,"base")) $valido=True; 
     if(!strcmp($kstype,"minima")) $valido=True;
+		if(!strcmp($kstype,"master")) $valido=True;
     if(!$valido){
       $err->setError("Tipo de instalación invalida ($kstype) para kstype");
     }
@@ -17,16 +18,34 @@ function valid_kstype($err,& $kstype){
   }
 }
 
-function valid_accel($err,& $accel){
+function valid_accel($err,& $accel, & $accel_type_install){
   if (isset($_GET['accel'])) {
-    $accel = $_GET['accel'];
-    if(!strcmp($accel,"cuda")) return;
-    if(!strcmp($accel,"mic")) return;
-    if(empty($accel)){
+		$temp_array = explode(",", $_GET['accel']);
+		if(!strcmp($temp_array[0] ,"cuda")){
+			$accel = "cuda";
+			if (isset($temp_array[1])){
+				if(!strcmp($temp_array[1] ,"net"))
+					$accel_type_install = "net";
+				else
+					$accel_type_install = "local";
+			}
+			return;
+		}if(!strcmp($temp_array[0] ,"mic")){
+			$accel = "mic";
+			return;
+		}if(empty($temp_array[0])){
       $err->setError("Parametro vacio para accel");
       return;
     }
-    $err->setError("Tipo de parametro invalido ($accel) para accel");
+		$err->setError("Tipo de parametro invalido ($temp_array[0]) para accel");
+//    $accel = $_GET['accel'];
+//    if(!strcmp($accel,"cuda")) return;
+//    if(!strcmp($accel,"mic")) return;
+//    if(empty($accel)){
+//      $err->setError("Parametro vacio para accel");
+//      return;
+//    }
+//    $err->setError("Tipo de parametro invalido ($accel) para accel");
   }else{
     $accel = "none";
   }
@@ -60,6 +79,9 @@ function valid_bench($err,& $benchmarks){
         continue;
       }elseif(!strcmp($bench_type,"hoomd_cuda")){
         $benchmarks['hoomd_cuda'] = "on";
+        continue;
+			}elseif(!strcmp($bench_type,"bonnie")){
+        $benchmarks['bonnie'] = "on";
         continue;
       }else
         $err->setError("Tipo de parametro invalido ($bench_type) para bench");
