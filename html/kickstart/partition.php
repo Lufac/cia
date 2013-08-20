@@ -1,7 +1,7 @@
 <?php
-function write_partioning(& $ksfile, $storage){
-  if(!strcmp($storage,"soft_raid")){
-    $ksfile .= "
+function write_partioning($opt){
+  if(!strcmp($opt->storage,"soft_raid")){
+    $tmpstr = "
 clearpart --all
 part raid.01 --size=100000  --ondisk=sda
 part raid.02 --size=18000 --ondisk=sda
@@ -16,12 +16,13 @@ raid swap  --level=RAID1 --device=md1 --fstype=ext4 raid.02 raid.12
 raid /home --level=RAID1 --device=md2 --fstype=ext4 raid.03 raid.13
     ";
   }else{
-    $ksfile .= "
+    $tmpstr = "
 clearpart --all
 part swap --asprimary --fstype=swap --recommended 
 part / --asprimary --fstype=ext4 --size=100000 
 part /home --asprimary --fstype=ext4 --size=1 --grow 
     ";
   };
+	return $tmpstr;
 }
 ?>

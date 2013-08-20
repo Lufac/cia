@@ -1,3 +1,4 @@
+#!/bin/bash
 git clone https://github.com/vetter/shoc
 mv shoc shoc_bench
 cd shoc_bench

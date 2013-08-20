@@ -1,6 +1,6 @@
 <?php
 
-class Error_cia{
+class ErrorCIA{
   private $error_str = "Sin error";
   private $error_flag = False;
   private $error_count = 1;
@@ -29,20 +29,15 @@ class Error_cia{
 
   public function getErrorStr(){
     $msg = "##########################################\n";
-    $msg .= "++++++++++++++++++++++++++++++++++++++++++\n";
-    $msg .= $this->error_str;
-    $msg .= "++++++++++++++++++++++++++++++++++++++++++\n";
+    $msg .= "#++++++++++++++++++++++++++++++++++++++++++\n";
+    $msg .= "#$this->error_str";
+    $msg .= "#++++++++++++++++++++++++++++++++++++++++++\n";
     $msg .= "##########################################\n";
     return ($msg);
   }
 
   function print_error(){
-    $msg = "##########################################\n";
-    $msg .= "++++++++++++++++++++++++++++++++++++++++++\n";
-    $msg .= $this->error_str;
-    $msg .= "++++++++++++++++++++++++++++++++++++++++++\n";
-    $msg .= "##########################################\n";
-    echo $msg;
+    echo getErrorStr();
   }
 }
 ?>

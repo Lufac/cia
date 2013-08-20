@@ -1,3 +1,4 @@
+#!/bin/bash
 #http://www.googlux.com/bonnie.html
 wget http://www.coker.com.au/bonnie++/bonnie++-1.03e.tgz
 tar xzvf bonnie++-1.03e.tgz
@@ -12,4 +13,5 @@ echo -e "\e[33m +++++++++++++++++++++++++++++++++++++\e[0m"
 echo -e "\e[33m Memory Size Decteted $MEM...\e[0m"
 echo -e "\e[33m Disk Size bench $DISK_SIZE...\e[0m"
 echo -e "\e[33m +++++++++++++++++++++++++++++++++++++\e[0m"
-./bonnie++-1.03e/bonnie++ -d /tmp/bonnie-local -s $DISK_SIZE -n 0 -m kepler -f -b -u root
+./bonnie++-1.03e/bonnie++ -d /tmp/bonnie-local -s $DISK_SIZE -n 0 -m $HOSTNAME -f -b -u root
+echo "Time seg: $SECONDS"

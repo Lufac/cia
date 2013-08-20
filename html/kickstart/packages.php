@@ -1,11 +1,11 @@
 <?php
-function write_packages(& $ksfile,$ks_type){
-  $ksfile .= "
+function write_packages($opt){
+  $tmpstr	 = "
 install
 %packages --ignoremissing
   ";
-  if(!strcmp($ks_type,"base") || !strcmp($ks_type,"master") ){
-    $ksfile .= "
+  if(!strcmp($opt->ks_type,"base") || !strcmp($opt->ks_type,"master") ){
+    $tmpstr .= "
 @additional-devel
 @ backup-server
 @ base
@@ -190,6 +190,7 @@ system-config-lvm
 audit-viewer
 firstaidkit-gui
 system-config-kickstart
+system-config-keyboard
 netpbm-progs
 xfig
 ImageMagick
@@ -372,8 +373,8 @@ zlib-devel
 -atlas
 -PackageKit
   ";
-  }else if(!strcmp($ks_type,"minima")){
-    $ksfile .= "
+  }else if(!strcmp($opt->ks_type,"minima")){
+    $tmpstr .= "
 @base
 @Development Tools
 cmake
@@ -382,5 +383,6 @@ boost-devel
 python-devel
     ";
   }
+	return $tmpstr;
 }
 ?>

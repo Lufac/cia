@@ -12,7 +12,7 @@ if [[ "$install_type" == "local" ]]; then
 	rm -f ./$CUDA_PKG
 fi
 
-if [[ "$install_type" == "net" ]]; then
+if [[ "$install_type" == "yum" ]]; then
 	echo -e "\e[33m +++++++++++++++++++++++++++++++++++++\e[0m"
 	echo -e "\e[33m Net installation...\e[0m"
 	echo -e "\e[33m +++++++++++++++++++++++++++++++++++++\e[0m"

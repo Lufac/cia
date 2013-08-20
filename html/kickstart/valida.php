@@ -3,93 +3,105 @@
 #Las funciones de validacion velifiacn que el parametro sea valiod,
 # pero si no esta difinido se define un default
 
-function valid_kstype($err,& $kstype){
+function valid_kstype($err, $opt){
   if (isset($_GET['ks_type'])) {
-    $kstype = $_GET['ks_type'];
-    $valido = False;
-    if(!strcmp($kstype,"base")) $valido=True; 
-    if(!strcmp($kstype,"minima")) $valido=True;
-		if(!strcmp($kstype,"master")) $valido=True;
-    if(!$valido){
-      $err->setError("Tipo de instalación invalida ($kstype) para kstype");
-    }
+    $temp_var = $_GET['ks_type'];
+    if(!strcmp($temp_var ,"base")) $valido=True;
+    if(!strcmp($temp_var ,"minima")) $valido=True;
+		if(!strcmp($temp_var ,"master")) $valido=True;
+    if($valido){
+      $opt->ks_type = $temp_var;
+			return;
+    }else
+			$err->setError("Tipo de instalación invalida ($temp_var ) para kstype");
   }else{
-    $kstype = "base";
+    $err->setError("Ningun tipo de instalación definida");
   }
 }
 
-function valid_accel($err,& $accel, & $accel_type_install){
+function valid_accel($err, $opt){
   if (isset($_GET['accel'])) {
 		$temp_array = explode(",", $_GET['accel']);
 		if(!strcmp($temp_array[0] ,"cuda")){
-			$accel = "cuda";
+			$opt->accel = "cuda";
 			if (isset($temp_array[1])){
-				if(!strcmp($temp_array[1] ,"net"))
-					$accel_type_install = "net";
+				if(!strcmp($temp_array[1] ,"yum"))
+					$opt->accel_type_install = "yum";
 				else
-					$accel_type_install = "local";
+					$opt->accel_type_install = "local";
 			}
 			return;
 		}if(!strcmp($temp_array[0] ,"mic")){
-			$accel = "mic";
+			$opt->accel = "mic";
 			return;
 		}if(empty($temp_array[0])){
       $err->setError("Parametro vacio para accel");
       return;
     }
 		$err->setError("Tipo de parametro invalido ($temp_array[0]) para accel");
-//    $accel = $_GET['accel'];
-//    if(!strcmp($accel,"cuda")) return;
-//    if(!strcmp($accel,"mic")) return;
-//    if(empty($accel)){
-//      $err->setError("Parametro vacio para accel");
-//      return;
-//    }
-//    $err->setError("Tipo de parametro invalido ($accel) para accel");
   }else{
-    $accel = "none";
+    $opt->accel = "none";
+		$opt->accel_type_install = "none";
   }
 }
 
-function valid_storage($err,& $storage){
+function valid_storage($err,& $opt){
   if (isset($_GET['storage'])) {
-    $storage = $_GET['storage'];
-    if(!strcmp($storage,"soft_raid")) return;
-    if(!strcmp($storage,"normal")) return;
-    if(empty($storage)){
+    $opt->storage = $_GET['storage'];
+    if(!strcmp($opt->storage,"soft_raid")) return;
+    if(!strcmp($opt->storage,"normal")) return;
+    if(empty($opt->storage)){
       $err->setError("Parametro vacio para storage");
       return;
     }
-    $err->setError("Tipo de parametro invalido ($storage) para storage");
+    $err->setError("Tipo de parametro invalido ($opt->storage) para storage");
   }else{
-    $storage = "normal";
+    $opt->storage = "normal";
   }
 }
 
-function valid_bench($err,& $benchmarks){
+function valid_bench($err,$opt){
   if (isset($_GET['bench'])) {
     $temp_array = explode(",", $_GET['bench']);
     foreach ($temp_array as &$bench_type) {
 #      echo $bench_type."\n";
       if(!strcmp($bench_type,"shoc")){
-        $benchmarks['shoc'] = "on";
+        $opt->benchmarks_list['shoc'] = "on";
         continue;
       }elseif(!strcmp($bench_type,"hoomd_openmp")){
-        $benchmarks['hoomd_openmp'] = "on"; 
+        $opt->benchmarks_list['hoomd_openmp'] = "on"; 
         continue;
       }elseif(!strcmp($bench_type,"hoomd_cuda")){
-        $benchmarks['hoomd_cuda'] = "on";
+        $opt->benchmarks_list['hoomd_cuda'] = "on";
         continue;
 			}elseif(!strcmp($bench_type,"bonnie")){
-        $benchmarks['bonnie'] = "on";
+        $opt->benchmarks_list['bonnie'] = "on";
         continue;
       }else
         $err->setError("Tipo de parametro invalido ($bench_type) para bench");
     }
-  }else{
-    $benchmarks = "none";
   }
+//	else{
+//    $benchmarks[0] = "none";
+//  }
 #  print_r ($benchmarks);
+}
+
+function valid_ipmi($err,$opt){
+  if (isset($_GET['ipmi'])) {
+    $temp_array = explode(",", $_GET['ipmi']);
+    foreach ($temp_array as &$ipmi_option) {
+      if(!strcmp($ipmi_option,"dhcp")){
+        $opt->ipmi_list['dhcp'] = "on";
+        continue;
+      }else{
+        $err->setError("Tipo de parametro invalido ($ipmi_option) para ipmi");
+			}
+    }
+  }
+//	else{
+//    $ipmi = "none";
+//  }
 }
 
 ?>
