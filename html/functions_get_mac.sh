@@ -1,27 +1,27 @@
-#!/bin/bash -x 
+#!/bin/bash -x
 #===================================================================================
 #
 # FILE: install_functions
 #
 # USAGE: source install_functions
 #
-# DESCRIPTION: En este archivo se guardaran todas las funciones de 
+# DESCRIPTION: En este archivo se guardaran todas las funciones de
 #	instalación del CIA
 #
-# OPTIONS: 
-# REQUIREMENTS: 
-# BUGS: 
-#   1.- Validar que en cada funcion todas las variables 
+# OPTIONS:
+# REQUIREMENTS:
+# BUGS:
+#   1.- Validar que en cada funcion todas las variables
 #   2.- Validar que los archivos donde se escriba existan
 #   3.- Por algo el ciclo de cachar la MAC del DHCP no regresa cero
 #   4.- Personalizar un kickstart
-#   5.- Agregar soporte para diferentes subredes 
+#   5.- Agregar soporte para diferentes subredes
 #   6.- Construir estructura de directorios si no existe /var/lib/tftpboot
-# NOTES: 
+# NOTES:
 # AUTHOR: M. en C. Jose Maria Zamora Fuentes
 # COMPANY: Lufac Computacion
 # VERSION: 1.0
-# CREATED: 2.06.2013 
+# CREATED: 2.06.2013
 # REVISION: 2.06.2013
 #===================================================================================
 
@@ -61,13 +61,13 @@ function getMacAdress(){
       VARS=($(tcpdump -lenx -s 1500 -c 1 -i $INSTALL_DEVICE port bootps or port bootpc 2>/dev/null | dhcpdump | grep -e ^CHADDR: -e ^"OPTION:  60"))
       MACADDR=${VARS[1]:0:17}
       VENDOR=${VARS[9]:0:9}
-    fi 
-    if [ ! -z $MACADDR ] ;then 
-      if grep -q $MACADDR /tmp/bad.mac ; then continue; fi 
-      echo "* $VENDOR: $MACADDR" 
+    fi
+    if [ ! -z $MACADDR ] ;then
+      if grep -q $MACADDR /tmp/bad.mac ; then continue; fi
+      echo "* $VENDOR: $MACADDR"
       echo -n "Continue with this MAC  y/n  [y]: "
       read -n 1 resp
-      echo 
+      echo
       [ "$resp" == y ] || [ "$resp" == Y ] && GETMAC=0
       [ -z $resp ] && GETMAC=0
       [ "$resp" == n ] || [ "$resp" == N ]  && echo $MACADDR >> /tmp/bad.mac && continue
@@ -78,7 +78,7 @@ function getMacAdress(){
 # NAME: getMacAdresCMD
 # DESCRIPTION: get MAC adress from user in interactive mode
 # PARAMETER
-# RETURN 
+# RETURN
 #   MACADDR: Direccion MAC capturada
 #===============================================================================
 function getMacAdressCMD(){
@@ -91,27 +91,27 @@ function getMacAdressCMD(){
       echo
       echo -n "** Please input MAC address for $NODE_NAME: "
       read MAC_tmp
-      if [ "$(echo $MAC_tmp | egrep "^([0-9a-fA-F]{2}:){5}[0-9a-fA-F]{2}$")" == "" ];then 
-        echo "$MAC_tmp is invalid !!" 
+      if [ "$(echo $MAC_tmp | egrep "^([0-9a-fA-F]{2}:){5}[0-9a-fA-F]{2}$")" == "" ];then
+        echo "$MAC_tmp is invalid !!"
         continue
-      else  
+      else
         MACADDR=$MAC_tmp
       fi
       GETMAC=0
       break
     done
-  fi  
+  fi
 }
 
 #=== FUNCTION ================================================================
-# NAME: Write PXE 
+# NAME: Write PXE
 # DESCRIPTION: writePXE
 # PARAMETER
 #   MACADDR: Direccion MAC  para escribir PXE
 #   TFTP_DIR: Ruta del directorio pxelinux.cfg/
 #   MASTER_ARCH: Arquitectura del nodo maestro para guardar el kernel
 #   NET_PARAM: Parametros de configuracion del kernel para red
-#   BOOT_PARAM: Parametros de Booteo para el kernel 
+#   BOOT_PARAM: Parametros de Booteo para el kernel
 # RETURN
 #===============================================================================
 function writePXE(){
@@ -130,14 +130,14 @@ label localboot
 label install
   KERNEL ../boot/$MASTER_ARCH/vmlinuz
   APPEND initrd=../boot/$MASTER_ARCH/initrd.img $NET_PARAM $BOOT_PARAM
-  IPAPPEND 2 
+  IPAPPEND 2
 EOF" > $TFTP_DIR/$PXENAME_FILE
   echo "Create $TFTP_DIR/$PXENAME_FILE... DONE"
 }
 
 #=== FUNCTION ================================================================
 # NAME: configure_dhcpd
-# DESCRIPTION: Este script configura el archivo dhcpd.conf 
+# DESCRIPTION: Este script configura el archivo dhcpd.conf
 # PARAMETER
 #   NAME_TARGET: Nombre del nodo objetivo
 #   IP_TARGET: IP que recibira el nodo objetivo
@@ -147,9 +147,9 @@ EOF" > $TFTP_DIR/$PXENAME_FILE
 #===============================================================================
 function configure_dhcpd(){
   echo "writing dhcp..."
-  write_new_dhcpd  
+  write_new_dhcpd
   VAR=$(egrep "^[#]+Last" /etc/dhcp/dhcpd.conf | wc -l)
-  [[ $VAR -ne 1 ]] && die "dhcpd.conf MALFORMED!! several Last entrys" 
+  [[ $VAR -ne 1 ]] && die "dhcpd.conf MALFORMED!! several Last entrys"
   write_dhcpd_entry
   echo "writing dhcp...DONE"
 }
@@ -232,14 +232,14 @@ function valid_hostname(){
 function start_services(){
   echo "Starting services..."
   echo "DHCPDARGS=$INSTALL_DEVICE" > /etc/sysconfig/dhcpd
-  if [ -e /etc/rc.d/init.d/dhcpd ] ; then  
-    /etc/rc.d/init.d/dhcpd restart 
-  else  
+  if [ -e /etc/rc.d/init.d/dhcpd ] ; then
+    /etc/rc.d/init.d/dhcpd restart
+  else
     killall dhcpd
-    dhcpd -cf $DHCP_CONF $INSTALL_DEVICE 
-  fi 
-  [ -e /etc/init.d/xinetd ] && /etc/init.d/xinetd restart 
-  [ -e /etc/init.d/httpd ] && /etc/init.d/httpd restart 
+    dhcpd -cf $DHCP_CONF $INSTALL_DEVICE
+  fi
+  [ -e /etc/init.d/xinetd ] && /etc/init.d/xinetd restart
+  [ -e /etc/init.d/httpd ] && /etc/init.d/httpd restart
 }
 
 function stop_dhcp(){
@@ -250,7 +250,7 @@ function stop_dhcp(){
     echo "dhcpd apagado"
   fi
 }
- 
+
 #=== FUNCTION ================================================================
 # NAME: install_node_master
 # DESCRIPTION: writePXE
@@ -258,7 +258,7 @@ function stop_dhcp(){
 # RETURN
 #===============================================================================
 function install_node_master(){
-  INSTALL_DEVICE="eth0" 
+  INSTALL_DEVICE="eth0"
   TARGET_DEVICE="eth0"
   NAME_TARGET=$1
   IP_TARGET="192.168.1.210"
@@ -269,7 +269,8 @@ function install_node_master(){
 #  VNC_EXTRA="vncconnect=$LOCAL_IP"
   MASTER_ARCH="x86_64"
   GW="192.168.1.1"
-  KS_SCHEME="getks.php?ks_type=base&gw=$GW&hostname=$NAME_TARGET&accel=cuda&storage=soft_raid&bench=bonnie,hoomd_openmp,hoomd_cuda"
+#  KS_SCHEME="getks.php?ks_type=base&gw=$GW&hostname=$NAME_TARGET&accel=cuda&storage=soft_raid&bench=bonnie,hoomd_openmp,hoomd_cuda"
+  KS_SCHEME="getks.php?ks_type=base&gw=$GW&hostname=$NAME_TARGET&storage=normal&bench=bonnie,hoomd_openmp&distro=centos6/x86_64"
 #  repo="repo=http://$LOCAL_IP/isos/$MASTER_ARCH"
   ks="ks=http://$LOCAL_IP/kickstart/$KS_SCHEME"
   BOOT_PARAM="noselinux selinux=0 headless xdriver=vesa nomodeset sshd $repo $ks $GUI_CONF $VNC_EXTRA"
