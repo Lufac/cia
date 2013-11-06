@@ -28,8 +28,8 @@ fi
 
 echo -e "\e[36m +++++++++++++++++++++++++++++++++++++\e[0m"
 if [ ! -f /usr/local/cuda/bin/nvcc ]; then
-	echo -e "\e[91m ch3m: Hoomd benchmark FAILED...\e[0m"
+	echo -e "\e[91m ch3m: Cuda SDK install FAILED...\e[0m"
 else
-	echo -e "\e[33m ch3m: Hoomd benchmark success...\e[0m"
+	echo -e "\e[33m ch3m: Cuda SDK install success...\e[0m"
 fi
 echo -e "\e[36m +++++++++++++++++++++++++++++++++++++\e[0m"

@@ -39,7 +39,7 @@ function write_network($opt){
 	$ip_node = $_SERVER['REMOTE_ADDR'];
 	$netmask = ip_netmask($ip_node);
 	$txttmp = "
-url --url http://$ip_server/centos6
+url --url http://$ip_server/$opt->distro
 network --bootproto=static --device=eth0 --ip=$ip_node --netmask=$netmask --gateway=$opt->gw --nameserver=8.8.8.8 --hostname $opt->hostname
 	";
 	return $txttmp;
@@ -75,6 +75,7 @@ valid_accel($errores,$opciones);
 valid_storage($errores,$opciones);
 valid_bench($errores,& $opciones);
 valid_ipmi($errores,& $opciones);
+valid_distro($errores,& $opciones);
 
 //Network parameters
 $ip_server = $_SERVER['SERVER_ADDR'];

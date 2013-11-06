@@ -2,7 +2,7 @@
 function write_partioning($opt){
   if(!strcmp($opt->storage,"soft_raid")){
     $tmpstr = "
-clearpart --all
+clearpart --all --initlabel
 part raid.01 --size=100000  --ondisk=sda
 part raid.02 --size=18000 --ondisk=sda
 part raid.03 --size=1 --grow --ondisk=sda  
@@ -17,7 +17,7 @@ raid /home --level=RAID1 --device=md2 --fstype=ext4 raid.03 raid.13
     ";
   }else{
     $tmpstr = "
-clearpart --all
+clearpart --all --initlabel
 part swap --asprimary --fstype=swap --recommended 
 part / --asprimary --fstype=ext4 --size=100000 
 part /home --asprimary --fstype=ext4 --size=1 --grow 

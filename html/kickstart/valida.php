@@ -22,6 +22,7 @@ function valid_kstype($err, $opt){
 function valid_accel($err, $opt){
   if (isset($_GET['accel'])) {
 		$temp_array = explode(",", $_GET['accel']);
+		
 		if(!strcmp($temp_array[0] ,"cuda")){
 			$opt->accel = "cuda";
 			if (isset($temp_array[1])){
@@ -29,12 +30,16 @@ function valid_accel($err, $opt){
 					$opt->accel_type_install = "yum";
 				else
 					$opt->accel_type_install = "local";
+			}else{
+				$err->setError("Tipo de instalacion de cuda invalida (local, yum)");
 			}
 			return;
-		}if(!strcmp($temp_array[0] ,"mic")){
+		}
+		if(!strcmp($temp_array[0] ,"mic")){
 			$opt->accel = "mic";
 			return;
-		}if(empty($temp_array[0])){
+		}
+		if(empty($temp_array[0])){
       $err->setError("Parametro vacio para accel");
       return;
     }
@@ -77,14 +82,13 @@ function valid_bench($err,$opt){
 			}elseif(!strcmp($bench_type,"bonnie")){
         $opt->benchmarks_list['bonnie'] = "on";
         continue;
+			}elseif(!strcmp($bench_type,"stream")){
+        $opt->benchmarks_list['stream'] = "on";
+        continue;
       }else
         $err->setError("Tipo de parametro invalido ($bench_type) para bench");
     }
   }
-//	else{
-//    $benchmarks[0] = "none";
-//  }
-#  print_r ($benchmarks);
 }
 
 function valid_ipmi($err,$opt){
@@ -99,9 +103,18 @@ function valid_ipmi($err,$opt){
 			}
     }
   }
-//	else{
-//    $ipmi = "none";
-//  }
+}
+
+function valid_distro($err,& $opt){
+  if (isset($_GET['distro'])) {
+    $opt->distro = $_GET['distro'];
+    if(!strcmp($opt->distro,"centos6/x86_64")) return;
+		if(!strcmp($opt->distro,"centos5")) return;
+    $err->setError("Tipo de parametro invalido ($opt->distro) para storage");
+  }else{
+		#Sin variable por default la distro es centos6
+    $opt->distro = "centos6";
+  }
 }
 
 ?>

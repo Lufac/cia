@@ -2,6 +2,7 @@
 
 class OptionsCIA{
 	public $hostname = "none";
+	public $distro = "none";
 	public $gw = "none";
   public $ks_type = "none";
 	public $storage = "none";
@@ -13,6 +14,7 @@ class OptionsCIA{
   function getOptionsMsg(){
 		$msg = "#++++++++++++++++++++++++++++++++++++++++++++++++++++++++#\n";
 		$msg .= "#### CIA inatallation Kickstart (ch3m)  #####\n";
+		$msg .= "#### Distro type: $this->distro\n";
 		$msg .= "#### Kickstart type: $this->ks_type\n";
 		$msg .= "#### Storage type: $this->storage\n";
 		$msg .= "#### Accelerator type: $this->accel\n";

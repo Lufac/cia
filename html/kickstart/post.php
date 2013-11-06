@@ -31,8 +31,8 @@ bash install_cia.sh $ip_server &>> install_cia.log
   if(!strcmp($opt->accel,"cuda"))
     $tmpstr .= "
 wget http://$ip_server/scripts/install_cuda_sdk.sh &> install.cuda.log
-bash install_cuda_sdk.sh $ip_server $accel_type_install &>> install.cuda.log
-    ";
+bash install_cuda_sdk.sh $ip_server $opt->accel_type_install &>> install.cuda.log
+		";
 
   //BENCHMARKS
   if(isset($opt->benchmarks_list['shoc']))
@@ -54,6 +54,11 @@ bash make_bench_hoomd_cuda.sh $ip_server &>> hoomd.bench_cuda.log
     $tmpstr .= "
 wget http://$ip_server/scripts/make_bench_bonnie.sh &> bonnie.bench.log
 bash make_bench_bonnie.sh &>> bonnie.bench.log
+    ";
+	if(isset($opt->benchmarks_list['stream']))
+    $tmpstr .= "
+wget http://$ip_server/scripts/make_bench_stream.sh &> stream.bench.log
+bash make_bench_stream.sh &>> stream.bench.log
     ";
 	
 	#IPMI
